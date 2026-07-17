@@ -1,0 +1,20 @@
+#include <windows.h>
+
+// Forward declaration of ScriptMain to link to script.cpp
+void ScriptMain();
+
+// Basic Script Hook V native export function declarations
+extern "C" __declspec(dllexport) void scriptRegister(HMODULE module, void(*LP_SCRIPT_MAIN)());
+extern "C" __declspec(dllexport) void scriptUnregister(HMODULE module);
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+    switch (ul_reason_for_call) {
+    case DLL_PROCESS_ATTACH:
+        scriptRegister(hModule, ScriptMain);
+        break;
+    case DLL_PROCESS_DETACH:
+        scriptUnregister(hModule);
+        break;
+    }
+    return TRUE;
+}
