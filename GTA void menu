@@ -1,0 +1,216 @@
+#include "script.h"
+#include <string>
+
+// ==========================================
+// 1. GLOBAL TOGGLE & THEME TRACKING VARIABLES
+// ==========================================
+// Menu State & Mechanics
+bool initialized = false;
+int splashTimer = 240; // Displays splash screen for ~4 seconds at 60fps
+
+// Weapons Mod Toggles
+bool tenfoldBullets = false;
+bool hundredfoldBullets = false;
+bool infAmmo = false;
+bool noReload = false;
+bool ultimateSpeedShoot = false;
+bool speedyRpg = false;
+
+// Player Mod Toggles
+bool godmode = false;
+bool moneyDrop = false;
+bool noMissionFailure = false;
+
+// Text Input helper for spawning vehicles
+char vehicleInputName[32] = "";
+
+// ==========================================
+// 2. HELPER FUNCTIONS 
+// ==========================================
+void KeyboardInputHelper() {
+    MISC::DISPLAY_ONSCREEN_KEYBOARD(1, "FMMC_KEY_TIP8", "", "", "", "", "", 32);
+    while (MISC::UPDATE_ONSCREEN_KEYBOARD() == 0) {
+        scriptWait(0); 
+    }
+    if (MISC::UPDATE_ONSCREEN_KEYBOARD() == 1) {
+        strcpy_s(vehicleInputName, MISC::GET_ONSCREEN_KEYBOARD_RESULT());
+    }
+}
+
+// Custom function to handle drawing text with specific fonts/scales safely
+void DrawMenuText(const char* text, int font, float x, float y, float scaleX, float scaleY, int r, int g, int b, int a, bool center) {
+    HUD::BEGIN_TEXT_COMMAND_DISPLAY_TEXT("STRING");
+    HUD::ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME(text);
+    HUD::SET_TEXT_FONT(font);
+    HUD::SET_TEXT_SCALE(scaleX, scaleY);
+    HUD::SET_TEXT_COLOUR(r, g, b, a);
+    if (center) HUD::SET_TEXT_CENTRE(true);
+    HUD::END_TEXT_COMMAND_DISPLAY_TEXT(x, y, 0);
+}
+
+// ==========================================
+// 3. MAIN MENU EVENT & UI HANDLER
+// ==========================================
+void MenuExample::scriptTick() {
+    
+    // --- STEP A: THE OPENING SPLASH SCREEN ---
+    if (splashTimer > 0) {
+        splashTimer--;
+
+        // Draw solid deep space cosmic background (Near black with a faint dark purple void tint)
+        GRAPHICS::DRAW_RECT(0.5f, 0.5f, 1.0f, 1.0f, 10, 5, 20, 255, false);
+
+        // Draw glowing nebula/space design accents (Layered purple bars top and bottom)
+        GRAPHICS::DRAW_RECT(0.5f, 0.05f, 1.0f, 0.01f, 147, 51, 234, 200, false); // Neon Purple
+        GRAPHICS::DRAW_RECT(0.5f, 0.95f, 1.0f, 0.01f, 88, 28, 135, 200, false);  // Deep Nebula Purple
+
+        // Pulsing alpha calculation for a smooth space-like fade effect
+        int alphaPulse = (int)(155 + (100 * sin(splashTimer * 0.05f)));
+
+        // Display welcome text elements using GTA's clean fonts
+        DrawMenuText("WELCOME TO VOID MENU", 1, 0.5f, 0.40f, 1.2f, 1.2f, 168, 85, 247, alphaPulse, true);
+        DrawMenuText("made by ccgvr1 on TikTok", 4, 0.5f, 0.52f, 0.6f, 0.6f, 255, 255, 255, 230, true);
+        DrawMenuText("Loading system files...", 0, 0.5f, 0.85f, 0.35f, 0.35f, 156, 163, 175, 150, true);
+
+        return; // Halts the rest of the menu logic while the splash screen is playing
+    }
+
+    // --- STEP B: INITIALIZE MENU CONTROLS & ACTIVATION KEY ---
+    if (!initialized) {
+        // Explicitly rebinds the menu base activation key to F8 (Virtual Key Code: 0x77)
+        menu.SetOpenKey(0x77); 
+        initialized = true;
+    }
+
+    // --- STEP C: APPLY SPACE PURPLE THEME CUSTOMIZATION ---
+    // Changes base colors to match a dark void interface with vibrant ultraviolet highlights
+    menu.SetHeaderColor(48, 15, 71, 240);       // Dark Cosmic Purple Banner
+    menu.SetSubheaderColor(26, 10, 41, 245);    // Deep Void Secondary Bar
+    menu.SetBackgroundColor(15, 6, 26, 220);     // Translucent Space-Black Body
+    menu.SetHighlightColor(168, 85, 247, 255);  // Electric Purple Hover/Selector Bar
+    menu.SetTextColor(243, 232, 255, 255);      // Soft Nebula White Font
+
+    // --- STEP D: MENU DIRECTORY STRUCTURING ---
+    if (menu.CurrentMenu() == "mainmenu") {
+        menu.Title("Void Menu");
+        if (menu.MenuOption("Player Options", "playersub")) {}
+        if (menu.MenuOption("Weapon Options", "weaponsub")) {}
+        if (menu.MenuOption("Vehicle Spawner", "vehiclesub")) {}
+    }
+
+    // --- PLAYER SUBMENU ---
+    if (menu.CurrentMenu() == "playersub") {
+        menu.Title("Player Options");
+        if (menu.BoolOption("God Mode", &godmode)) {}
+        if (menu.BoolOption("Money Drop", &moneyDrop)) {}
+        if (menu.BoolOption("No Mission Failure", &noMissionFailure)) {}
+    }
+
+    // --- WEAPONS SUBMENU ---
+    if (menu.CurrentMenu() == "weaponsub") {
+        menu.Title("Weapon Options");
+        
+        if (menu.BoolOption("Tenfold Bullets (x10)", &tenfoldBullets)) {}
+        if (menu.BoolOption("Hundredfold Bullets (x100)", &hundredfoldBullets)) {}
+        if (menu.BoolOption("Infinite Ammo", &infAmmo)) {}
+        if (menu.BoolOption("No Reloading", &noReload)) {}
+        if (menu.BoolOption("Ultimate Speed Shoot", &ultimateSpeedShoot)) {}
+        if (menu.BoolOption("Speedy RPG", &speedyRpg)) {}
+        
+        if (menu.Button("Give All Weapons")) {
+            Ped playerPed = PLAYER::PLAYER_PED_ID();
+            WEAPON::GIVE_DELAYED_WEAPON_TO_PED(playerPed, MISC::GET_HASH_KEY("WEAPON_PISTOL"), 9999, true);
+            WEAPON::GIVE_DELAYED_WEAPON_TO_PED(playerPed, MISC::GET_HASH_KEY("WEAPON_CARBINERIFLE"), 9999, true);
+            WEAPON::GIVE_DELAYED_WEAPON_TO_PED(playerPed, MISC::GET_HASH_KEY("WEAPON_SPECIALCARBINE"), 9999, true);
+            WEAPON::GIVE_DELAYED_WEAPON_TO_PED(playerPed, MISC::GET_HASH_KEY("WEAPON_MICROSMG"), 9999, true);
+            WEAPON::GIVE_DELAYED_WEAPON_TO_PED(playerPed, MISC::GET_HASH_KEY("WEAPON_PUMPSHOTGUN"), 9999, true);
+            WEAPON::GIVE_DELAYED_WEAPON_TO_PED(playerPed, MISC::GET_HASH_KEY("WEAPON_RPG"), 9999, true);
+            WEAPON::GIVE_DELAYED_WEAPON_TO_PED(playerPed, MISC::GET_HASH_KEY("WEAPON_HOMINGLAUNCHER"), 9999, true);
+        }
+        if (menu.Button("Remove All Weapons")) {
+            WEAPON::REMOVE_ALL_PED_WEAPONS(PLAYER::PLAYER_PED_ID(), true);
+        }
+    }
+
+    // --- VEHICLE SPAWNER SUBMENU ---
+    if (menu.CurrentMenu() == "vehiclesub") {
+        menu.Title("Vehicle Spawner");
+        
+        if (menu.Button("Type Vehicle Name to Spawn")) {
+            KeyboardInputHelper(); 
+            
+            if (strlen(vehicleInputName) > 0) {
+                Hash modelHash = MISC::GET_HASH_KEY(vehicleInputName);
+                if (STREAMING::IS_MODEL_IN_CDIMAGE(modelHash)) {
+                    STREAMING::REQUEST_MODEL(modelHash);
+                    while (!STREAMING::HAS_MODEL_LOADED(modelHash)) { scriptWait(0); }
+                    
+                    Ped playerPed = PLAYER::PLAYER_PED_ID();
+                    Vector3 coords = ENTITY::GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(playerPed, 0.0f, 5.0f, 0.0f);
+                    float heading = ENTITY::GET_ENTITY_HEADING(playerPed);
+                    
+                    Vehicle veh = VEHICLE::CREATE_VEHICLE(modelHash, coords.x, coords.y, coords.z, heading, true, false, false);
+                    PED::SET_PED_INTO_VEHICLE(playerPed, veh, -1);
+                    STREAMING::SET_MODEL_AS_NO_LONGER_NEEDED(modelHash);
+                }
+                memset(vehicleInputName, 0, sizeof(vehicleInputName)); 
+            }
+        }
+    }
+
+    // ==========================================
+    // 4. THE LIVE BACKGROUND LOOP (EVERY FRAME)
+    // ==========================================
+    Ped playerPed = PLAYER::PLAYER_PED_ID();
+    Player player = PLAYER::PLAYER_ID();
+
+    if (godmode) {
+        PLAYER::SET_PLAYER_INVINCIBLE(player, true);
+        ENTITY::SET_ENTITY_PROOFS(playerPed, true, true, true, true, true, true, true, true);
+    } else {
+        PLAYER::SET_PLAYER_INVINCIBLE(player, false);
+    }
+
+    if (moneyDrop) {
+        Vector3 coords = ENTITY::GET_ENTITY_COORDS(playerPed, true);
+        OBJECT::CREATE_AMBIENT_PICKUP(MISC::GET_HASH_KEY("PICKUP_MONEY_CASE"), coords.x, coords.y, coords.z + 0.5f, 0, 25000, 0, false, true);
+    }
+
+    if (noMissionFailure) {
+        MISC::SET_MISSION_FLAG(true);
+        PLAYER::SET_DISABLE_AUTOMATIC_RESPAWN(true);
+    }
+
+    if (infAmmo) {
+        WEAPON::SET_PED_INFINITE_AMMO_CLIP(playerPed, true);
+    } else {
+        WEAPON::SET_PED_INFINITE_AMMO_CLIP(playerPed, false);
+    }
+
+    if (noReload) {
+        Hash currentWeapon;
+        if (WEAPON::GET_CURRENT_PED_WEAPON(playerPed, &currentWeapon, true)) {
+            int maxClip = WEAPON::GET_MAX_AMMO_IN_CLIP(playerPed, currentWeapon, true);
+            WEAPON::SET_AMMO_IN_CLIP(playerPed, currentWeapon, maxClip);
+        }
+    }
+
+    if (tenfoldBullets && PED::IS_PED_SHOOTING(playerPed)) {
+        PLAYER::SET_PLAYER_WEAPON_DAMAGE_MODIFIER(player, 10.0f);
+    } else if (hundredfoldBullets && PED::IS_PED_SHOOTING(playerPed)) {
+        PLAYER::SET_PLAYER_WEAPON_DAMAGE_MODIFIER(player, 100.0f);
+    } else if (!tenfoldBullets && !hundredfoldBullets) {
+        PLAYER::SET_PLAYER_WEAPON_DAMAGE_MODIFIER(player, 1.0f);
+    }
+
+    Hash weaponHash;
+    if (WEAPON::GET_CURRENT_PED_WEAPON(playerPed, &weaponHash, true)) {
+        if (ultimateSpeedShoot) {
+            PLAYER::SET_TIME_SCALE(0.4f); 
+        } else if (speedyRpg && (weaponHash == MISC::GET_HASH_KEY("WEAPON_RPG") || weaponHash == MISC::GET_HASH_KEY("WEAPON_HOMINGLAUNCHER"))) {
+            WEAPON::REFILL_AMMO_INSTANTLY(playerPed);
+        } else {
+            PLAYER::SET_TIME_SCALE(1.0f); 
+        }
+    }
+}
