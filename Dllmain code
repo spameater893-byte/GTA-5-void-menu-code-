@@ -1,0 +1,20 @@
+#include "../../sdk/inc/main.h" // Points to the main Script Hook V header folder
+#include <windows.h>
+
+// This tells dllmain that your menu loop exists inside your script.cpp file
+void ScriptMain();
+
+// This is the core Windows entry point function for the DLL library
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+    switch (ul_reason_for_call) {
+    case DLL_PROCESS_ATTACH:
+        // Registers your custom menu thread to boot up safely when the game loads
+        scriptRegister(hModule, ScriptMain);
+        break;
+    case DLL_PROCESS_DETACH:
+        // Safely unregisters the script loop when you close GTA 5
+        scriptUnregister(hModule);
+        break;
+    }
+    return TRUE;
+}
