@@ -1,0 +1,37 @@
+#pragma once
+#include <string>
+#include <vector>
+#include "../../sdk/inc/natives.h"
+
+namespace NativeMenu {
+    class Menu {
+    private:
+        std::string currentMenu = "mainmenu";
+        std::string previousMenu = "";
+        int currentOption = 0;
+        int maxOptions = 0;
+        bool optionPressed = false;
+        bool leftPressed = false;
+        bool rightPressed = false;
+
+        // Space Theme Default Base Variables
+        int hR = 48, hG = 15, hB = 71, hA = 240;
+        int bgR = 15, bgG = 6, bgB = 26, bgA = 220;
+        int hiR = 168, hiG = 85, hiB = 247, hiA = 255;
+        int txR = 243, txG = 232, txB = 255, txA = 255;
+
+    public:
+        void SetHeaderColor(int r, int g, int b, int a) { hR = r; hG = g; hB = b; hA = a; }
+        void SetSubheaderColor(int r, int g, int b, int a) {}
+        void SetBackgroundColor(int r, int g, int b, int a) { bgR = r; bgG = g; bgB = b; bgA = a; }
+        void SetHighlightColor(int r, int g, int b, int a) { hiR = r; hiG = g; hiB = b; hiA = a; }
+        void SetTextColor(int r, int g, int b, int a) { txR = r; txG = g; txB = b; txA = a; }
+
+        std::string CurrentMenu() { return currentMenu; }
+        void Title(const char* title);
+        bool MenuOption(const char* option, const char* targetMenu);
+        bool Button(const char* option);
+        bool BoolOption(const char* option, bool* toggle);
+        void HandleControls();
+    };
+}
